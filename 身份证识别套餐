@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>身份证体检套餐查询工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.3/dist/tesseract.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(to right, #2c3e50, #4a6491);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .input-section {
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        input {
+            flex: 1;
+            padding: 14px 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+        
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        button {
+            background: linear-gradient(to right, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            background: linear-gradient(to right, #2980b9, #2573a7);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .camera-section {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .camera-btn {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+            margin-bottom: 15px;
+        }
+        
+        .camera-preview {
+            width: 100%;
+            max-width: 400px;
+            height: 250px;
+            background: #ddd;
+            margin: 15px auto;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #777;
+            font-size: 1.1rem;
+            overflow: hidden;
+        }
+        
+        .camera-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .result-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 20px;
+            border-left: 5px solid #3498db;
+            display: none;
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .result-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            font-weight: 700;
+        }
+        
+        .result-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .info-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .info-title {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .info-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .package-details {
+            grid-column: span 2;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .package-title {
+            font-size: 1.2rem;
+            color: #e74c3c;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .package-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .package-item {
+            background: #e8f4fc;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .error-message {
+            background: #fce4e3;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+            font-weight: 500;
+        }
+        
+        .success-message {
+            background: #e8f6ef;
+            color: #27ae60;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+            font-weight: 500;
+        }
+        
+        .instructions {
+            background: #e8f4fc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 25px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        
+        footer {
+            background: #2c3e50;
+            color: #ecf0f1;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .ocr-loading {
+            display: none;
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .result-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .package-details {
+                grid-column: span 1;
+            }
+            
+            .input-container {
+                flex-direction: column;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-id-card"></i> 身份证体检套餐查询工具</h1>
+            <p class="subtitle">输入身份证号码或拍照识别，自动计算年龄和性别，匹配对应的体检套餐</p>
+        </header>
+        
+        <div class="content">
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="id-card"><i class="fas fa-fingerprint"></i> 请输入身份证号码</label>
+                    <div class="input-container">
+                        <input type="text" id="id-card" placeholder="输入18位身份证号码">
+                        <button id="check-btn">
+                            <i class="fas fa-search"></i> 查询套餐
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="error-message" id="error-msg"></div>
+                <div class="success-message" id="success-msg"></div>
+                
+                <div class="camera-section">
+                    <h3><i class="fas fa-camera"></i> 身份证拍照识别</h3>
+                    <p>上传身份证照片自动识别号码（仅支持正面）</p>
+                    
+                    <div class="input-container">
+                        <input type="file" id="upload-id-card" accept="image/*" style="display: none;">
+                        <button id="upload-btn">
+                            <i class="fas fa-upload"></i> 选择图片
+                        </button>
+                        <button id="camera-btn" class="camera-btn">
+                            <i class="fas fa-camera"></i> 拍照识别
+                        </button>
+                    </div>
+                    
+                    <div class="camera-preview" id="camera-preview">
+                        <span>预览区域</span>
+                    </div>
+                    
+                    <div class="ocr-loading" id="ocr-loading">
+                        <div class="spinner"></div>
+                        <p>正在识别身份证号码...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="result-section" id="result-section">
+                <div class="result-header">
+                    <h2 class="result-title"><i class="fas fa-file-medical-alt"></i> 查询结果</h2>
+                    <button id="reset-btn">
+                        <i class="fas fa-redo"></i> 重新查询
+                    </button>
+                </div>
+                
+                <div class="result-content">
+                    <div class="info-card">
+                        <div class="info-title">
+                            <i class="fas fa-user"></i> 年龄与性别
+                        </div>
+                        <div class="info-value" id="age-gender">--</div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="info-title">
+                            <i class="fas fa-heartbeat"></i> 推荐套餐
+                        </div>
+                        <div class="info-value" id="package-name">--</div>
+                    </div>
+                    
+                    <div class="package-details">
+                        <div class="info-title">
+                            <i class="fas fa-clipboard-list"></i> 套餐详情
+                        </div>
+                        <div id="package-desc">请先输入身份证号码查询</div>
+                        
+                        <div class="package-title">
+                            <i class="fas fa-vial"></i> 包含项目
+                        </div>
+                        <div class="package-items" id="package-items">
+                            <!-- 项目将通过JS动态添加 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="instructions">
+                <h3><i class="fas fa-info-circle"></i> 使用说明</h3>
+                <ul>
+                    <li>输入18位身份证号码后点击"查询套餐"按钮，或使用拍照识别功能</li>
+                    <li>系统会自动计算年龄和性别，并匹配对应的体检套餐</li>
+                    <li>不同年龄段和性别对应不同的体检套餐</li>
+                    <li>结果包含年龄性别信息、套餐名称和详细项目</li>
+                    <li>如需重新查询，请点击"重新查询"按钮</li>
+                </ul>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 身份证体检套餐查询工具 | 本工具不存储任何个人信息</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const idCardInput = document.getElementById('id-card');
+            const checkBtn = document.getElementById('check-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const uploadBtn = document.getElementById('upload-btn');
+            const cameraBtn = document.getElementById('camera-btn');
+            const uploadInput = document.getElementById('upload-id-card');
+            const errorMsg = document.getElementById('error-msg');
+            const successMsg = document.getElementById('success-msg');
+            const resultSection = document.getElementById('result-section');
+            const ageGender = document.getElementById('age-gender');
+            const packageName = document.getElementById('package-name');
+            const packageDesc = document.getElementById('package-desc');
+            const packageItems = document.getElementById('package-items');
+            const cameraPreview = document.getElementById('camera-preview');
+            const ocrLoading = document.getElementById('ocr-loading');
+            
+            // 上传按钮点击事件
+            uploadBtn.addEventListener('click', function() {
+                uploadInput.click();
+            });
+            
+            // 文件选择事件
+            uploadInput.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        cameraPreview.innerHTML = `<img src="${e.target.result}" alt="身份证预览">`;
+                        recognizeIDCard(file);
+                    };
+                    
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            // 拍照按钮点击事件
+            cameraBtn.addEventListener('click', function() {
+                alert("在真实环境中，这里会调用设备摄像头进行拍照。由于浏览器安全限制，本演示版本请使用上传图片功能。");
+            });
+            
+            // 识别身份证函数
+            function recognizeIDCard(imageFile) {
+                ocrLoading.style.display = 'block';
+                
+                Tesseract.recognize(
+                    imageFile,
+                    'chi_sim+eng', // 中文和英文识别
+                    { 
+                        logger: m => console.log(m) 
+                    }
+                ).then(({ data: { text } }) => {
+                    ocrLoading.style.display = 'none';
+                    
+                    // 从识别文本中提取身份证号码
+                    const idMatch = text.match(/\d{17}[\dXx]/);
+                    if (idMatch) {
+                        const idCard = idMatch[0];
+                        idCardInput.value = idCard;
+                        successMsg.textContent = '身份证号码识别成功！';
+                        successMsg.style.display = 'block';
+                        
+                        // 自动查询套餐
+                        checkPackage();
+                    } else {
+                        errorMsg.textContent = '未能识别到身份证号码，请尝试更清晰的图片或手动输入';
+                        errorMsg.style.display = 'block';
+                    }
+                }).catch(err => {
+                    ocrLoading.style.display = 'none';
+                    errorMsg.textContent = '识别失败：' + err.message;
+                    errorMsg.style.display = 'block';
+                });
+            }
+            
+            // 查询按钮点击事件
+            checkBtn.addEventListener('click', checkPackage);
+            
+            function checkPackage() {
+                const idCard = idCardInput.value.trim();
+                
+                // 隐藏错误和结果
+                errorMsg.style.display = 'none';
+                successMsg.style.display = 'none';
+                resultSection.style.display = 'none';
+                
+                // 验证身份证格式
+                if (!isValidIdCard(idCard)) {
+                    errorMsg.textContent = '请输入有效的18位身份证号码';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                
+                // 计算年龄和性别
+                const age = calculateAge(idCard);
+                const gender = getGender(idCard);
+                
+                if (age < 16) {
+                    errorMsg.textContent = '年龄不足16岁，不在体检范围内';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                
+                if (age > 80) {
+                    errorMsg.textContent = '年龄超过80岁，不在体检范围内';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+                
+                // 获取套餐信息
+                const packageInfo = getPackageInfo(age, gender);
+                
+                // 显示结果
+                ageGender.textContent = `${age}岁${gender}`;
+                packageName.textContent = packageInfo.name;
+                packageDesc.textContent = packageInfo.desc;
+                
+                // 清空并添加套餐项目
+                packageItems.innerHTML = '';
+                packageInfo.items.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'package-item';
+                    itemElement.innerHTML = `<i class="fas fa-check-circle"></i> ${item}`;
+                    packageItems.appendChild(itemElement);
+                });
+                
+                // 显示结果部分
+                resultSection.style.display = 'block';
+                successMsg.textContent = '查询成功！';
+                successMsg.style.display = 'block';
+            }
+            
+            // 重置按钮点击事件
+            resetBtn.addEventListener('click', function() {
+                idCardInput.value = '';
+                cameraPreview.innerHTML = '<span>预览区域</span>';
+                errorMsg.style.display = 'none';
+                successMsg.style.display = 'none';
+                resultSection.style.display = 'none';
+            });
+            
+            // 验证身份证格式
+            function isValidIdCard(idCard) {
+                // 基本格式验证
+                if (!/^\d{17}[\dXx]$/.test(idCard)) {
+                    return false;
+                }
+                
+                // 校验码验证
+                const factors = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+                let sum = 0;
+                
+                for (let i = 0; i < 17; i++) {
+                    sum += parseInt(idCard.charAt(i)) * factors[i];
+                }
+                
+                const remainder = sum % 11;
+                const checkCodes = ['1', '0', 'X', '9', '8', '7', '6', '5', '4', '3', '2'];
+                const checkCode = checkCodes[remainder];
+                
+                return idCard.charAt(17).toUpperCase() === checkCode;
+            }
+            
+            // 计算年龄
+            function calculateAge(idCard) {
+                const birthYear = parseInt(idCard.substring(6, 10));
+                const birthMonth = parseInt(idCard.substring(10, 12)) - 1; // 月份从0开始
+                const birthDay = parseInt(idCard.substring(12, 14));
+                
+                const today = new Date();
+                const birthDate = new Date(birthYear, birthMonth, birthDay);
+                
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth(
